@@ -85,7 +85,7 @@ function baidu_analytics_page_attachments(&$page) {
     '403', // Forbidden
     '404', // Not Found
   );
-  _baidu_analytics_visibility_pages();
+  _baidu_analytics_visibility_user($user);
   // 1. Check if the Baidu account number has a value.
   // 2. Track page views based on visibility value.
   // 3. Check if we should track the currently active user's role.
@@ -688,17 +688,12 @@ $setting_pages = \Drupal::config('baidu_analytics.settings')->get('baidu_analyti
  * should be added to the current page and otherwise FALSE.
  */
 function _baidu_analytics_visibility_header($account) {
-
-  // @FIXME
-// // @FIXME
-// // This looks like another module's variable. You'll need to rewrite this call
-// // to ensure that it uses the correct configuration object.
-// if (($account->uid || variable_get('cache', 0) == 0) && variable_get('baidu_analytics_privacy_donottrack', TRUE) && !empty($_SERVER['HTTP_DNT'])) {
-//     // Disable tracking if caching is disabled or a visitors is logged in and
-//     // have opted out from tracking via DNT (Do-Not-Track) header.
-//     return FALSE;
-//   }
-
+  // kint(\Drupal::config('system.performance')->get('page_cache_maximum_age'));die;
+  /*if (($account->uid || \Drupal::config('system.performance')->get('page_cache_maximum_age') == 0) && variable_get('baidu_analytics_privacy_donottrack', TRUE) && !empty($_SERVER['HTTP_DNT'])) {
+    // Disable tracking if caching is disabled or a visitors is logged in and
+    // have opted out from tracking via DNT (Do-Not-Track) header.
+    return FALSE;
+  }*/
 
   return TRUE;
 }
