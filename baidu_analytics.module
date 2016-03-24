@@ -32,9 +32,9 @@ define('BAIDU_ANALYTICS_STANDARD_LIBRARY_URL', 'hm.baidu.com/h.js');
 /**
  * Implements hook_help().
  */
-function baidu_analytics_help($path, $arg) {
-  switch ($path) {
-    case 'admin/config/system/baidu_analytics':
+function baidu_analytics_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'baidu_analytics.admin_settings_form':
       return t('<a href="@btj_url">Baidu Analytics</a> is a free (registration required) website traffic and marketing effectiveness service.', array('@btj_url' => 'http://tongji.baidu.com/'));
   }
 }
