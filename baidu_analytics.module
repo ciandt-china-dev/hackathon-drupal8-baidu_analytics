@@ -44,8 +44,10 @@ function baidu_analytics_help($route_name, \Drupal\Core\Routing\RouteMatchInterf
  */
 function baidu_analytics_theme() {
   return array(
+    // When previewing a view.
     'baidu_analytics_admin_custom_var_table' => array(
-      'render element' => 'form',
+      'variables' => array('view' => NULL, 'section' => NULL, 'content' => NULL, 'links' => ''),
+      'file' => 'baidu_analytics.theme.inc',
     ),
   );
 }
