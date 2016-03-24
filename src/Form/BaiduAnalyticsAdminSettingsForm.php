@@ -25,9 +25,9 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $config = $this->config('baidu_analytics.settings');
-
-    foreach (Element::children($form) as $variable) {
-      $config->set($variable, $form_state->getValue($form[$variable]['#parents']));
+    $values = $form_state->getValues();
+    foreach ($values as $variable => $value) {
+      $config->set($variable, $value);
     }
     $config->save();
 
@@ -46,6 +46,8 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
   }
 
   public function buildForm(array $form_state, \Drupal\Core\Form\FormStateInterface $form_state) {
+
+    $form['#attached']['library'][] = 'baidu_analytics/baidu_analytics';
     $form['account'] = [
       '#type' => 'fieldset',
       '#title' => t('General settings'),
@@ -73,41 +75,31 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
     ];
     $form['tracking'] = [
       '#type' => 'vertical_tabs',
-      '#attached' => [
-        'js' => [
-          drupal_get_path('module', 'baidu_analytics') . '/baidu_analytics.admin.js'
-          ]
-        ],
     ];
-
     // Page specific visibility configurations.
     $php_access = \Drupal::currentUser()->hasPermission('use PHP for tracking visibility');
-    $visibility = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_visibility_pages');
-    // @FIXME
-    // Could not extract the default value because it is either indeterminate, or
-    // not scalar. You'll need to provide a default value in
-    // config/install/baidu_analytics.settings.yml and config/schema/baidu_analytics.schema.yml.
+
+    $visibility = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_visibility_pages', '0');
     $pages = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_pages');
 
-    $form['tracking']['page_vis_settings'] = [
-      '#type' => 'fieldset',
+    $form['page_vis_settings'] = [
+      '#type' => 'details',
       '#title' => t('Pages'),
       '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
+      '#group' => 'tracking',
     ];
 
     if ($visibility == 2 && !$php_access) {
-      $form['tracking']['page_vis_settings'] = [];
-      $form['tracking']['page_vis_settings']['visibility'] = [
+      $form['page_vis_settings'] = [];
+      $form['page_vis_settings']['visibility'] = [
         '#type' => 'value',
         '#value' => 2,
       ];
-      $form['tracking']['page_vis_settings']['pages'] = [
+      $form['page_vis_settings']['pages'] = [
         '#type' => 'value',
         '#value' => $pages,
       ];
-    }
-    else {
+    } else {
       $options = [
         t('Every page except the listed pages'),
         t('The listed pages only'),
@@ -120,36 +112,37 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
 
       if (\Drupal::moduleHandler()->moduleExists('php') && $php_access) {
         $options[] = t('Pages on which this PHP code returns <code>TRUE</code> (experts only)');
-        $form['tracking']['page_vis_settings']['#title'] = t('Pages or PHP code');
+        $form['page_vis_settings']['#title'] = t('Pages or PHP code');
         $description .= ' ' . t('If the PHP option is chosen, enter PHP code between %php. Note that executing incorrect PHP code can break your Drupal site.', [
           '%php' => '<?php ?>'
           ]);
       }
+
       // Pages visibility settings exclude/include paths or PHP code.
-      $form['tracking']['page_vis_settings']['baidu_analytics_visibility_pages'] = [
+      $form['page_vis_settings']['baidu_analytics_visibility_pages'] = [
         '#type' => 'radios',
         '#title' => t('Add tracking to specific pages'),
         '#options' => $options,
         '#default_value' => $visibility,
       ];
+
       // Pages visibility textarea could receive either paths or PHP code.
-      $form['tracking']['page_vis_settings']['baidu_analytics_pages'] = [
+      $form['page_vis_settings']['baidu_analytics_pages'] = [
         '#type' => 'textarea',
-        '#title' => $form['tracking']['page_vis_settings']['#title'],
+        '#title' => $form['page_vis_settings']['#title'],
         '#title_display' => 'invisible',
         '#default_value' => $pages,
         '#description' => $description,
         '#rows' => 10,
       ];
     }
-
     // Render the role overview.
-    $form['tracking']['role_vis_settings'] = [
-      '#type' => 'fieldset',
+    $form['role_vis_settings'] = [
+      '#type' => 'details',
       '#title' => t('Roles'),
+      '#group' => 'tracking',
     ];
-
-    $form['tracking']['role_vis_settings']['baidu_analytics_visibility_roles'] = [
+     $form['role_vis_settings']['baidu_analytics_visibility_roles'] = [
       '#type' => 'radios',
       '#title' => t('Add tracking for specific roles'),
       '#options' => [
@@ -159,12 +152,8 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
       '#default_value' => \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_visibility_roles'),
     ];
 
-    $role_options = array_map('check_plain', user_roles());
-    // @FIXME
-    // Could not extract the default value because it is either indeterminate, or
-    // not scalar. You'll need to provide a default value in
-    // config/install/baidu_analytics.settings.yml and config/schema/baidu_analytics.schema.yml.
-    $form['tracking']['role_vis_settings']['baidu_analytics_roles'] = [
+    $role_options = user_role_names();
+    $form['role_vis_settings']['baidu_analytics_roles'] = [
       '#type' => 'checkboxes',
       '#title' => t('Roles'),
       '#default_value' => \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_roles'),
@@ -173,12 +162,13 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
     ];
 
     // Standard tracking configurations.
-    $form['tracking']['user_vis_settings'] = [
-      '#type' => 'fieldset',
+    $form['user_vis_settings'] = [
+      '#type' => 'details',
       '#title' => t('Users'),
+      '#group' => 'tracking',
     ];
     $t_permission = ['%permission' => t('opt-in or out of tracking')];
-    $form['tracking']['user_vis_settings']['baidu_analytics_custom'] = [
+    $form['user_vis_settings']['baidu_analytics_custom'] = [
       '#type' => 'radios',
       '#title' => t('Allow users to customize tracking on their account page'),
       '#options' => [
@@ -190,30 +180,28 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
     ];
 
     // Link Tracking specific configurations.
-    $form['tracking']['linktracking'] = [
-      '#type' => 'fieldset',
+    $form['linktracking'] = [
+      '#type' => 'details',
       '#title' => t('Links and downloads'),
+      '#group' => 'tracking',
     ];
-    $form['tracking']['linktracking']['baidu_analytics_trackoutbound'] = [
+    $form['linktracking']['baidu_analytics_trackoutbound'] = [
       '#type' => 'checkbox',
       '#title' => t('Track clicks on outbound links'),
       '#default_value' => \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackoutbound'),
     ];
-    $form['tracking']['linktracking']['baidu_analytics_trackmailto'] = [
+    $form['linktracking']['baidu_analytics_trackmailto'] = [
       '#type' => 'checkbox',
       '#title' => t('Track clicks on mailto links'),
       '#default_value' => \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackmailto'),
     ];
-    $form['tracking']['linktracking']['baidu_analytics_trackfiles'] = [
+    $form['linktracking']['baidu_analytics_trackfiles'] = [
       '#type' => 'checkbox',
       '#title' => t('Track downloads (clicks on file links) for the following extensions'),
       '#default_value' => \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackfiles'),
     ];
-    // @FIXME
-    // Could not extract the default value because it is either indeterminate, or
-    // not scalar. You'll need to provide a default value in
-    // config/install/baidu_analytics.settings.yml and config/schema/baidu_analytics.schema.yml.
-    $form['tracking']['linktracking']['baidu_analytics_trackfiles_extensions'] = [
+
+    $form['linktracking']['baidu_analytics_trackfiles_extensions'] = [
       '#title' => t('List of download file extensions'),
       '#title_display' => 'invisible',
       '#type' => 'textfield',
@@ -224,16 +212,18 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
       '#maxlength' => 255,
     ];
 
+
     // Message Tracking specific configurations.
-    $form['tracking']['messagetracking'] = [
-      '#type' => 'fieldset',
+    $form['messagetracking'] = [
+      '#type' => 'details',
       '#title' => t('Messages'),
+      '#group' => 'tracking',
     ];
     // @FIXME
     // Could not extract the default value because it is either indeterminate, or
     // not scalar. You'll need to provide a default value in
     // config/install/baidu_analytics.settings.yml and config/schema/baidu_analytics.schema.yml.
-    $form['tracking']['messagetracking']['baidu_analytics_trackmessages'] = [
+    $form['messagetracking']['baidu_analytics_trackmessages'] = [
       '#type' => 'checkboxes',
       '#title' => t('Track messages of type'),
       '#default_value' => \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackmessages'),
@@ -247,9 +237,10 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
 
     // Baidu Analytics already has many translations, otherwise a note is
     // displayed to change the language.
-    $form['tracking']['search_and_advertising'] = [
-      '#type' => 'fieldset',
+    $form['search_and_advertising'] = [
+      '#type' => 'details',
       '#title' => t('Search and Advertising'),
+      '#group' => 'tracking',
     ];
 
     // Search and Advertising configuration.
@@ -263,7 +254,7 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
       ]);
     $site_search_dependencies .= '</div>';
 
-    $form['tracking']['search_and_advertising']['baidu_analytics_site_search'] = [
+    $form['search_and_advertising']['baidu_analytics_site_search'] = [
       '#type' => 'checkbox',
       '#title' => t('Track internal search'),
       '#description' => t('If checked, internal search keywords are tracked with search results page urls. The query keywords and total items count are added as parameters to the search results page URL being tracked.') . $site_search_dependencies,
@@ -272,11 +263,12 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
     ];
 
     // Privacy specific configurations.
-    $form['tracking']['privacy'] = [
-      '#type' => 'fieldset',
+    $form['privacy'] = [
+      '#type' => 'details',
       '#title' => t('Privacy'),
+      '#group' => 'tracking',
     ];
-    $form['tracking']['privacy']['baidu_analytics_privacy_donottrack'] = [
+    $form['privacy']['baidu_analytics_privacy_donottrack'] = [
       '#type' => 'checkbox',
       '#title' => t('Universal web tracking opt-out'),
       '#description' => t('If enabled and your server receives the <a href="@donottrack">Do-Not-Track</a> header from the client browser, the Baidu Analytics module will not embed any tracking code into your site. Compliance with Do Not Track could be purely voluntary, enforced by industry self-regulation, or mandated by state or federal law. Please accept your visitors privacy. If they have opt-out from tracking and advertising, you should accept their personal decision. This feature is currently limited to logged in users and disabled page caching.', [
@@ -295,13 +287,9 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
       '#theme' => 'baidu_analytics_admin_custom_var_table',
       '#title' => t('Custom variables'),
       '#tree' => TRUE,
-      '#type' => 'fieldset',
+      '#type' => 'details',
     ];
 
-    // @FIXME
-    // Could not extract the default value because it is either indeterminate, or
-    // not scalar. You'll need to provide a default value in
-    // config/install/baidu_analytics.settings.yml and config/schema/baidu_analytics.schema.yml.
     $baidu_analytics_custom_vars = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_custom_var');
 
     // Baidu Analytics supports up to 5 custom variables.
@@ -382,10 +370,10 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
 
     // Advanced feature configurations.
     $form['advanced'] = [
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#title' => t('Advanced settings'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
+      '#open' => FALSE,
+
     ];
     // Baidu Analytics Tracking Code (BATC) type.
     $form['advanced']['baidu_analytics_code_type'] = [
@@ -421,7 +409,7 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
 
     // Provide code snippets fields to allow inserting custom JavaScript logic.
     $form['advanced']['codesnippet'] = [
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#title' => t('Custom JavaScript code'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
@@ -477,6 +465,7 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
       ],
       '#default_value' => \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_js_scope'),
     ];
+
 
     return parent::buildForm($form, $form_state);
   }

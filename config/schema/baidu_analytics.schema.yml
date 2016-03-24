@@ -34,3 +34,7 @@ baidu_analytics.settings:
       type: string
     baidu_analytics_last_cache:
       type: integer
+    baidu_analytics_pages:
+      type: string
+    baidu_analytics_trackfiles_extensions:
+      type: string

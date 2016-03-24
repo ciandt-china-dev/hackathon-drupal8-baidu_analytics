@@ -1,0 +1,4 @@
+baidu_analytics:
+  version: VERSION
+  js: 
+    baidu_analytics.admin.js: {}
