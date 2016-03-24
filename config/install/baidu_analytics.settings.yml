@@ -1,0 +1,16 @@
+baidu_analytics_account: ''
+baidu_analytics_visibility_pages: 0
+baidu_analytics_visibility_roles: 0
+baidu_analytics_custom: 0
+baidu_analytics_trackoutbound: true
+baidu_analytics_trackmailto: true
+baidu_analytics_trackfiles: true
+baidu_analytics_site_search: false
+baidu_analytics_privacy_donottrack: true
+baidu_analytics_code_type: async
+baidu_analytics_cache: false
+baidu_analytics_translation_set: false
+baidu_analytics_codesnippet_before: ''
+baidu_analytics_codesnippet_after: ''
+baidu_analytics_js_scope: default
+baidu_analytics_last_cache: 0
