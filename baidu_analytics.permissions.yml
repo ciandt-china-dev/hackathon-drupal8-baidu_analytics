@@ -1,0 +1,11 @@
+# In baidu_analytics.permissions.yml file.
+administer baidu analytics:
+  title: 'Administer Baidu Analytics'
+  description: 'Perform maintenance tasks for Baidu Analytics.'
+opt-in or out of tracking:
+  title: 'Opt-in or out of tracking'
+  description: 'Allow users to decide if tracking code will be added to pages or not.'
+use PHP for tracking visibility:
+  title: 'Use PHP for tracking visibility'
+  description: 'Enter PHP code in the field for tracking visibility settings.'
+  restrict access: TRUE

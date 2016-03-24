@@ -51,27 +51,6 @@ function baidu_analytics_theme() {
 }
 
 /**
- * Implements hook_permission().
- */
-function baidu_analytics_permission() {
-  return array(
-    'administer baidu analytics' => array(
-      'title' => t('Administer Baidu Analytics'),
-      'description' => t('Perform maintenance tasks for Baidu Analytics.'),
-    ),
-    'opt-in or out of tracking' => array(
-      'title' => t('Opt-in or out of tracking'),
-      'description' => t('Allow users to decide if tracking code will be added to pages or not.'),
-    ),
-    'use PHP for tracking visibility' => array(
-      'title' => t('Use PHP for tracking visibility'),
-      'description' => t('Enter PHP code in the field for tracking visibility settings.'),
-      'restrict access' => TRUE,
-    ),
-  );
-}
-
-/**
  * Implements hook_menu().
  */
 function baidu_analytics_menu() {
