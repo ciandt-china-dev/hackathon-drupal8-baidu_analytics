@@ -69,24 +69,41 @@ function baidu_analytics_menu() {
 
 /**
  * Implements hook_page_alter().
+ */
+function baidu_analytics_page_attachments(&$page) {
+  $user = \Drupal::currentUser();
+
+  // Get the web property ID for which the tracking code should be generated.
+  $id = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_account');
+  $id = 'd6bad03bc22ab18345d2106f31602def';
+  $request = \Drupal::request();
+  // Get page http status code for visibility filtering.
+  $status = NULL;
+  if ($exception = $request->attributes->get('exception')) {
+    $status = $exception->getStatusCode();
+  }
+  $trackable_status_codes = array(
+    '403', // Forbidden
+    '404', // Not Found
+  );
+  _baidu_analytics_visibility_pages();
+  // 1. Check if the Baidu account number has a value.
+  // 2. Track page views based on visibility value.
+  // 3. Check if we should track the currently active user's role.
+  // 4. Ignore pages visibility filter for 404 or 403 status codes.
+  //if (!empty($id) && (_baidu_analytics_visibility_pages() || in_array($status, $trackable_status_codes)) && _baidu_analytics_visibility_user($user)) {
+
+  //}
+}
+
+/**
+ * Implements hook_page_alter().
  *
  * Generate the appropriate JavaScript code based on the Baidu Analytics API,
  * and module's configuration settings. Insert resulting code in the right
  * scope/region of the page.
  */
 function baidu_analytics_page_alter(&$page) {
-
-  $user = \Drupal::currentUser();
-
-  // Get the web property ID for which the tracking code should be generated.
-  $id = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_account');
-
-  // Get page status code for visibility filtering.
-  $status = drupal_get_http_header('Status');
-  $trackable_status_codes = array(
-    '403 Forbidden',
-    '404 Not Found',
-  );
 
   // 1. Check if the Baidu account number has a value.
   // 2. Track page views based on visibility value.
