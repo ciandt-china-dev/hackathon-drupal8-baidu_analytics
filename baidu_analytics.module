@@ -75,7 +75,6 @@ function baidu_analytics_page_attachments(&$page) {
 
   // Get the web property ID for which the tracking code should be generated.
   $id = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_account');
-  $id = 'd6bad03bc22ab18345d2106f31602def';
   $request = \Drupal::request();
   // Get page http status code for visibility filtering.
   $status = NULL;
@@ -654,12 +653,14 @@ $setting_pages = \Drupal::config('baidu_analytics.settings')->get('baidu_analyti
       // with different case. Ex: /Page, /page, /PAGE.
       $pages = \Drupal\Component\Utility\Unicode::strtolower($setting_pages);
       if ($visibility < 2) {
+        $current_path = \Drupal::service('path.current')->getPath();
+        $path = \Drupal::service('path.alias_manager')->getAliasByPath($current_path);
         // Convert the Drupal path to lowercase.
-        $path = \Drupal\Component\Utility\Unicode::strtolower(drupal_get_path_alias($_GET['q']));
+        $path = \Drupal\Component\Utility\Unicode::strtolower($path);
         // Compare the lowercase internal and lowercase path alias (if any).
-        $page_match = drupal_match_path($path, $pages);
-        if ($path != $_GET['q']) {
-          $page_match = $page_match || drupal_match_path($_GET['q'], $pages);
+        $page_match = \Drupal::service('path.matcher')->matchPath($path, $pages);
+        if ($path != $current_path) {
+          $page_match = $page_match || \Drupal::service('path.matcher')->matchPath($current_path, $pages);
         }
         // When $visibility has a value of 0, the tracking code is displayed on
         // all pages except those listed in $pages. When set to 1, it
