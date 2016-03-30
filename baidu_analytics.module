@@ -57,7 +57,7 @@ function baidu_analytics_menu() {
 }
 
 /**
- * Implements hook_page_alter().
+ * Implements hook_page_attachments().
  */
 function baidu_analytics_page_attachments(&$page) {
   $user = \Drupal::currentUser();
@@ -74,24 +74,6 @@ function baidu_analytics_page_attachments(&$page) {
     '403', // Forbidden
     '404', // Not Found
   );
-  _baidu_analytics_visibility_user($user);
-  // 1. Check if the Baidu account number has a value.
-  // 2. Track page views based on visibility value.
-  // 3. Check if we should track the currently active user's role.
-  // 4. Ignore pages visibility filter for 404 or 403 status codes.
-  //if (!empty($id) && (_baidu_analytics_visibility_pages() || in_array($status, $trackable_status_codes)) && _baidu_analytics_visibility_user($user)) {
-
-  //}
-}
-
-/**
- * Implements hook_page_alter().
- *
- * Generate the appropriate JavaScript code based on the Baidu Analytics API,
- * and module's configuration settings. Insert resulting code in the right
- * scope/region of the page.
- */
-function baidu_analytics_page_alter(&$page) {
 
   // 1. Check if the Baidu account number has a value.
   // 2. Track page views based on visibility value.
@@ -121,43 +103,18 @@ function baidu_analytics_page_alter(&$page) {
     if ($track_mailto = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackmailto')) {
       $link_settings['trackMailto'] = $track_mailto;
     }
-    // @FIXME
-// Could not extract the default value because it is either indeterminate, or
-// not scalar. You'll need to provide a default value in
-// config/install/baidu_analytics.settings.yml and config/schema/baidu_analytics.schema.yml.
-if (($track_download = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackfiles')) && ($trackfiles_extensions = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackfiles_extensions'))) {
+    if (($track_download = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackfiles')) && ($trackfiles_extensions = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackfiles_extensions'))) {
       $link_settings['trackDownload'] = $track_download;
       $link_settings['trackDownloadExtensions'] = $trackfiles_extensions;
     }
 
     if (!empty($link_settings)) {
-      // @FIXME
-// The Assets API has totally changed. CSS, JavaScript, and libraries are now
-// attached directly to render arrays using the #attached property.
-// 
-// 
-// @see https://www.drupal.org/node/2169605
-// @see https://www.drupal.org/node/2408597
-// drupal_add_js(array('baidu_analytics' => $link_settings), 'setting');
-
-      // @FIXME
-// The Assets API has totally changed. CSS, JavaScript, and libraries are now
-// attached directly to render arrays using the #attached property.
-// 
-// 
-// @see https://www.drupal.org/node/2169605
-// @see https://www.drupal.org/node/2408597
-// drupal_add_js(drupal_get_path('module', 'baidu_analytics') . '/baidu_analytics.js');
-
+      $page['#attached']['drupalSettings']['baidu_analytics'] = $link_settings;
+      $page['#attached']['library'][] = 'baidu_analytics/baidu_analytics';
     }
-
     // Add messages tracking.
     $message_events = '';
-    // @FIXME
-// Could not extract the default value because it is either indeterminate, or
-// not scalar. You'll need to provide a default value in
-// config/install/baidu_analytics.settings.yml and config/schema/baidu_analytics.schema.yml.
-if ($message_types = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackmessages')) {
+    if ($message_types = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackmessages')) {
       $message_types = array_values(array_filter($message_types));
       $status_heading = array(
         'status' => t('Status message'),
@@ -183,7 +140,8 @@ if ($message_types = \Drupal::config('baidu_analytics.settings')->get('baidu_ana
       if ($pager_total_items != 0) {
         // @FIXME
 // url() expects a route name or an external URI.
-// $url_custom = url('search/' . arg(1), array('query' => array('search' => $keys, 'total-results' => intval($pager_total_items[0]))));
+
+         $url_custom = url('search/' . arg(1), array('query' => array('search' => $keys, 'total-results' => intval($pager_total_items[0]))));
 
       }
       else {
@@ -194,6 +152,25 @@ if ($message_types = \Drupal::config('baidu_analytics.settings')->get('baidu_ana
 
       }
     }
+
+  }
+}
+
+/**
+ * Implements hook_page_alter().
+ *
+ * Generate the appropriate JavaScript code based on the Baidu Analytics API,
+ * and module's configuration settings. Insert resulting code in the right
+ * scope/region of the page.
+ */
+function baidu_analytics_page_alter(&$page) {
+
+    // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/baidu_analytics.settings.yml and config/schema/baidu_analytics.schema.yml.
+
+
 
     // If this node is translated from another one, pass the original instead.
     if (\Drupal::moduleHandler()->moduleExists('translation') && \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_translation_set')) {
@@ -335,13 +312,13 @@ $baidu_analytics_custom_vars = \Drupal::config('baidu_analytics.settings')->get(
     // @FIXME
 // The Assets API has totally changed. CSS, JavaScript, and libraries are now
 // attached directly to render arrays using the #attached property.
-// 
-// 
+//
+//
 // @see https://www.drupal.org/node/2169605
 // @see https://www.drupal.org/node/2408597
 // drupal_add_js($script, array('scope' => $scope, 'type' => 'inline'));
 
-  }
+//  }
 }
 
 /**
@@ -490,8 +467,8 @@ function _baidu_analytics_cache($location, $sync_cached_file = FALSE) {
     // @FIXME
 // drupal_http_request() has been replaced by the Guzzle HTTP client, which is bundled
 // with Drupal core.
-// 
-// 
+//
+//
 // @see https://www.drupal.org/node/1862446
 // @see http://docs.guzzlephp.org/en/latest
 // $result = drupal_http_request($location, array('headers' => array('referer' => $base_url)));
@@ -591,11 +568,7 @@ function _baidu_analytics_visibility_roles($account) {
 
   $visibility = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_visibility_roles');
   $enabled = $visibility;
-  // @FIXME
-// Could not extract the default value because it is either indeterminate, or
-// not scalar. You'll need to provide a default value in
-// config/install/baidu_analytics.settings.yml and config/schema/baidu_analytics.schema.yml.
-$roles = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_roles');
+  $roles = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_roles');
 
   if (array_sum($roles) > 0) {
     // One or more roles are selected.
@@ -677,12 +650,11 @@ $setting_pages = \Drupal::config('baidu_analytics.settings')->get('baidu_analyti
  * should be added to the current page and otherwise FALSE.
  */
 function _baidu_analytics_visibility_header($account) {
-  // kint(\Drupal::config('system.performance')->get('page_cache_maximum_age'));die;
-  /*if (($account->uid || \Drupal::config('system.performance')->get('page_cache_maximum_age') == 0) && variable_get('baidu_analytics_privacy_donottrack', TRUE) && !empty($_SERVER['HTTP_DNT'])) {
+  if (($account->uid || \Drupal::config('system.performance')->get('cache.page.max_age') == 0) && \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_privacy_donottrack') && !empty($_SERVER['HTTP_DNT'])) {
     // Disable tracking if caching is disabled or a visitors is logged in and
     // have opted out from tracking via DNT (Do-Not-Track) header.
     return FALSE;
-  }*/
+  }
 
   return TRUE;
 }

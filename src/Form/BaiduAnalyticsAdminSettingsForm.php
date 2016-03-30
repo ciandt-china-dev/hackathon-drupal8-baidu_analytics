@@ -47,7 +47,7 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
 
   public function buildForm(array $form, FormStateInterface $form_state) {
 
-    $form['#attached']['library'][] = 'baidu_analytics/baidu_analytics';
+    $form['#attached']['library'][] = 'baidu_analytics/baidu_analytics.admin';
     $form['account'] = [
       '#type' => 'fieldset',
       '#title' => t('General settings'),
@@ -444,8 +444,8 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
     // Calling _theme() directly can alter the expected output and potentially
     // introduce security issues (see https://www.drupal.org/node/2195739). You
     // should use renderable arrays instead.
-    // 
-    // 
+    //
+    //
     // @see https://www.drupal.org/node/2195739
     // $js_scope_description_list = theme('item_list', array(
     //     'items' => array(
