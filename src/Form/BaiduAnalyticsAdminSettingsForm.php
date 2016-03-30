@@ -284,17 +284,21 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
       '#description' => t('You can add Baidu Analytics <a href="@custom_var_documentation">Custom Variables</a> here. These will be added to every page that Baidu Analytics tracking code appears on. Baidu Analytics will only accept custom variables if the <em>name</em> and <em>value</em> combined are less than 128 bytes after URL encoding. Keep the names as short as possible and expect long values to get trimmed. You may use tokens in custom variable names and values. Global and user tokens are always available; on node pages, node tokens are also available.', [
         '@custom_var_documentation' => 'http://tongji.baidu.com/open/api/more?p=guide_setCustomVar'
         ]),
-      '#theme' => 'baidu_analytics_admin_custom_var_table',
       '#title' => t('Custom variables'),
       '#tree' => TRUE,
       '#type' => 'details',
+    ];
+
+    $form['baidu_analytics_custom_var']['baidu_analytics_custom_var_table'] = [
+      '#type' => 'table',
+      '#header' => array(t('Slot'), t('Name'), t('Value'), t('Scope')),
     ];
 
     $baidu_analytics_custom_vars = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_custom_var');
 
     // Baidu Analytics supports up to 5 custom variables.
     for ($i = 1; $i < 6; $i++) {
-      $form['baidu_analytics_custom_var']['slots'][$i]['slot'] = [
+      $form['baidu_analytics_custom_var']['baidu_analytics_custom_var_table'][$i]['slot'] = [
         '#default_value' => $i,
         '#description' => t('Slot number'),
         '#disabled' => TRUE,
@@ -305,8 +309,8 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
         '#title_display' => 'invisible',
         '#type' => 'textfield',
       ];
-      $form['baidu_analytics_custom_var']['slots'][$i]['name'] = [
-        '#default_value' => !empty($baidu_analytics_custom_vars['slots'][$i]['name']) ? $baidu_analytics_custom_vars['slots'][$i]['name'] : '',
+      $form['baidu_analytics_custom_var']['baidu_analytics_custom_var_table'][$i]['name'] = [
+        '#default_value' => !empty($baidu_analytics_custom_vars['baidu_analytics_custom_var_table'][$i]['name']) ? $baidu_analytics_custom_vars['baidu_analytics_custom_var_table'][$i]['name'] : '',
         '#description' => t('The custom variable name.'),
         '#maxlength' => 255,
         '#size' => 20,
@@ -320,8 +324,8 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
           ],
         '#token_types' => ['node'],
       ];
-      $form['baidu_analytics_custom_var']['slots'][$i]['value'] = [
-        '#default_value' => !empty($baidu_analytics_custom_vars['slots'][$i]['value']) ? $baidu_analytics_custom_vars['slots'][$i]['value'] : '',
+      $form['baidu_analytics_custom_var']['baidu_analytics_custom_var_table'][$i]['value'] = [
+        '#default_value' => !empty($baidu_analytics_custom_vars['baidu_analytics_custom_var_table'][$i]['value']) ? $baidu_analytics_custom_vars['baidu_analytics_custom_var_table'][$i]['value'] : '',
         '#description' => t('The custom variable value.'),
         '#maxlength' => 255,
         '#title' => t('Custom variable value #@slot', [
@@ -335,11 +339,11 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
         '#token_types' => ['node'],
       ];
       if (\Drupal::moduleHandler()->moduleExists('token')) {
-        $form['baidu_analytics_custom_var']['slots'][$i]['name']['#element_validate'][] = 'token_element_validate';
-        $form['baidu_analytics_custom_var']['slots'][$i]['value']['#element_validate'][] = 'token_element_validate';
+        $form['baidu_analytics_custom_var'][$i]['name']['#element_validate'][] = 'token_element_validate';
+        $form['baidu_analytics_custom_var'][$i]['value']['#element_validate'][] = 'token_element_validate';
       }
-      $form['baidu_analytics_custom_var']['slots'][$i]['scope'] = [
-        '#default_value' => !empty($baidu_analytics_custom_vars['slots'][$i]['scope']) ? $baidu_analytics_custom_vars['slots'][$i]['scope'] : 3,
+      $form['baidu_analytics_custom_var']['baidu_analytics_custom_var_table'][$i]['scope'] = [
+        '#default_value' => !empty($baidu_analytics_custom_vars['baidu_analytics_custom_var_table'][$i]['scope']) ? $baidu_analytics_custom_vars['baidu_analytics_custom_var_table'][$i]['scope'] : 3,
         '#description' => t('The scope for the custom variable.'),
         '#title' => t('Custom variable slot #@slot', [
           '@slot' => $i
