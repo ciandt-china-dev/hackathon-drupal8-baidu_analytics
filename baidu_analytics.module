@@ -7,7 +7,7 @@
  * Adds the required Javascript to all your Drupal pages to allow tracking by
  * the Baidu Analytics statistics package.
  */
-
+use Drupal\Component\Serialization\Json;
 /**
  * Define the default file extension list that should be tracked as download.
  */
@@ -61,9 +61,9 @@ function baidu_analytics_menu() {
  */
 function baidu_analytics_page_attachments(&$page) {
   $user = \Drupal::currentUser();
-
+  $config = \Drupal::config('baidu_analytics.settings');
   // Get the web property ID for which the tracking code should be generated.
-  $id = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_account');
+  $id = $config->get('baidu_analytics_account');
   $request = \Drupal::request();
   // Get page http status code for visibility filtering.
   $status = NULL;
@@ -82,10 +82,10 @@ function baidu_analytics_page_attachments(&$page) {
   if (!empty($id) && (_baidu_analytics_visibility_pages() || in_array($status, $trackable_status_codes)) && _baidu_analytics_visibility_user($user)) {
 
     // Allow user to override the scope for script inclusion in the page.
-    $scope = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_js_scope');
+    $scope = $config->get('baidu_analytics_js_scope');
     // Select recommended scope depending on the type of code to generate.
     if ($scope == 'default') {
-      if (\Drupal::config('baidu_analytics.settings')->get('baidu_analytics_code_type') == 'standard') {
+      if ($config->get('baidu_analytics_code_type') == 'standard') {
         // Standard code is recommended to be added in 'footer'.
         $scope = 'footer';
       }
@@ -97,13 +97,13 @@ function baidu_analytics_page_attachments(&$page) {
 
     // Add link tracking.
     $link_settings = array();
-    if ($track_outbound = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackoutbound')) {
+    if ($track_outbound = $config->get('baidu_analytics_trackoutbound')) {
       $link_settings['trackOutbound'] = $track_outbound;
     }
-    if ($track_mailto = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackmailto')) {
+    if ($track_mailto = $config->get('baidu_analytics_trackmailto')) {
       $link_settings['trackMailto'] = $track_mailto;
     }
-    if (($track_download = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackfiles')) && ($trackfiles_extensions = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackfiles_extensions'))) {
+    if (($track_download = $config->get('baidu_analytics_trackfiles')) && ($trackfiles_extensions = $config->get('baidu_analytics_trackfiles_extensions'))) {
       $link_settings['trackDownload'] = $track_download;
       $link_settings['trackDownloadExtensions'] = $trackfiles_extensions;
     }
@@ -114,7 +114,7 @@ function baidu_analytics_page_attachments(&$page) {
     }
     // Add messages tracking.
     $message_events = '';
-    if ($message_types = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackmessages')) {
+    if ($message_types = $config->get('baidu_analytics_trackmessages')) {
       $message_types = array_values(array_filter($message_types));
       $status_heading = array(
         'status' => t('Status message'),
@@ -126,7 +126,7 @@ function baidu_analytics_page_attachments(&$page) {
         // Track only the selected message types.
         if (in_array($type, $message_types)) {
           foreach ($messages as $message) {
-            $message_events .= '_hmt.push(["_trackEvent", ' . \Drupal\Component\Serialization\Json::encode(t('Messages')) . ', ' . \Drupal\Component\Serialization\Json::encode($status_heading[$type]) . ', ' . \Drupal\Component\Serialization\Json::encode($status_heading[$type] . ': ' . strip_tags($message)) . ']);';
+            $message_events .= '_hmt.push(["_trackEvent", ' . Json::encode(t('Messages')) . ', ' . Json::encode($status_heading[$type]) . ', ' . Json::encode($status_heading[$type] . ': ' . strip_tags($message)) . ']);';
           }
         }
       }
@@ -134,80 +134,45 @@ function baidu_analytics_page_attachments(&$page) {
 
     // Site search tracking support.
     $url_custom = '';
-    if (\Drupal::moduleHandler()->moduleExists('search') && \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_site_search') && arg(0) == 'search' && $keys = baidu_analytics_search_get_keys()) {
+    if (\Drupal::moduleHandler()->moduleExists('search') && $config->get('baidu_analytics_site_search') && (strpos(\Drupal::routeMatch()->getRouteName(), 'search.view') === 0) && $keys = ($request->query->has('keys') ? trim($request->get('keys')) : '')) {
       global $pager_total_items;
+      $entity_id = \Drupal::routeMatch()->getParameter('entity')->id();
       // If there are results, include the keys and the total count.
       if ($pager_total_items != 0) {
-        // @FIXME
-// url() expects a route name or an external URI.
-
-         $url_custom = url('search/' . arg(1), array('query' => array('search' => $keys, 'total-results' => intval($pager_total_items[0]))));
-
+        $url_custom = Url::fromRoute('search.view_' . $entity_id, [], ['query' => ['search' => $keys, 'total-results' => intval($pager_total_items[0])]])->toString();
       }
       else {
         // Make sure no results keys are included in the tracked URL.
-        // @FIXME
-// url() expects a route name or an external URI.
-// $url_custom = url('search/' . arg(1), array('query' => array('search' => 'no-results:' . $keys, 'cat' => 'no-results')));
-
+        $url_custom = Url::fromRoute('search.view_' . $entity_id, [], ['query' => ['search' => 'no-results:' . $keys, 'cat' => 'no-results']])->toString();
       }
     }
-
-  }
-}
-
-/**
- * Implements hook_page_alter().
- *
- * Generate the appropriate JavaScript code based on the Baidu Analytics API,
- * and module's configuration settings. Insert resulting code in the right
- * scope/region of the page.
- */
-function baidu_analytics_page_alter(&$page) {
-
-    // @FIXME
-// Could not extract the default value because it is either indeterminate, or
-// not scalar. You'll need to provide a default value in
-// config/install/baidu_analytics.settings.yml and config/schema/baidu_analytics.schema.yml.
-
-
-
     // If this node is translated from another one, pass the original instead.
-    if (\Drupal::moduleHandler()->moduleExists('translation') && \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_translation_set')) {
+    if (\Drupal::moduleHandler()->moduleExists('content_translation') && $config->get('baidu_analytics_translation_set')) {
       // Check we have a node object, it supports translation, and its
       // translated node ID (tnid) doesn't match its own node ID.
-      $node = \Drupal::routeMatch()->getParameter();
-      if ($node && translation_supported_type($node->type) && !empty($node->tnid) && ($node->tnid != $node->nid)) {
-        $source_node = \Drupal::entityManager()->getStorage('node')->load($node->tnid);
-        $languages = language_list();
-        // @FIXME
-// url() expects a route name or an external URI.
-// $url_custom = url('node/' . $source_node->nid, array('language' => $languages[$source_node->language]));
-
+      if ($request->attributes->has('node')) {
+        $node = $request->attributes->get('node');
+        if ($node instanceof NodeInterface && \Drupal::entityManager()->getTranslationFromContext($node) !== $node->getUntranslated()) {
+        $url_custom = Url::fromRoute('entity.node.canonical', ['node' => $node->id()], ['language' => $node->getUntranslated()->language()])->toString();
+        }
       }
     }
 
     // Track access denied (403) and file not found (404) pages.
     $referer_uri = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
-    $current_uri = request_uri() == '' ? '/' : request_uri();
+    $current_uri = $request->getRequestUri() == '' ? '/' : $request->getRequestUri();
     // Report a specific URL containing referer and current page URL.
-    if ($status == '403 Forbidden') {
+    if ($status == '403') {
       $url_custom = "/403.html?page={$current_uri}&from={$referer_uri}";
     }
-    elseif ($status == '404 Not Found') {
+    elseif ($status == '404') {
       $url_custom = "/404.html?page={$current_uri}&from={$referer_uri}";
     }
 
     // Add any custom code snippets if specified.
-    $codesnippet_before = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_codesnippet_before');
-    $codesnippet_after = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_codesnippet_after');
-
-    // Add custom variables.
-    // @FIXME
-// Could not extract the default value because it is either indeterminate, or
-// not scalar. You'll need to provide a default value in
-// config/install/baidu_analytics.settings.yml and config/schema/baidu_analytics.schema.yml.
-$baidu_analytics_custom_vars = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_custom_var');
+    $codesnippet_before = $config->get('baidu_analytics_codesnippet_before');
+    $codesnippet_after = $config->get('baidu_analytics_codesnippet_after');
+    $baidu_analytics_custom_vars = $config->get('baidu_analytics_custom_var');
     $custom_var = '';
     for ($i = 1; $i < 6; $i++) {
       $custom_var_name = !empty($baidu_analytics_custom_vars['slots'][$i]['name']) ? $baidu_analytics_custom_vars['slots'][$i]['name'] : '';
@@ -216,38 +181,39 @@ $baidu_analytics_custom_vars = \Drupal::config('baidu_analytics.settings')->get(
         $custom_var_scope = !empty($baidu_analytics_custom_vars['slots'][$i]['scope']) ? $baidu_analytics_custom_vars['slots'][$i]['scope'] : 3;
 
         $types = array();
-        $node = \Drupal::routeMatch()->getParameter();
-        if (is_object($node)) {
-          $types += array('node' => $node);
+        if ($request->attributes->has('node')) {
+          $node = $request->attributes->get('node');
+          if ($node instanceof NodeInterface) {
+            $types += ['node' => $node];
+          }
         }
         $custom_var_name = \Drupal::token()->replace($custom_var_name, $types, array('clear' => TRUE));
         $custom_var_value = \Drupal::token()->replace($custom_var_value, $types, array('clear' => TRUE));
 
         // Suppress empty custom names and/or variables.
-        if (!\Drupal\Component\Utility\Unicode::strlen(trim($custom_var_name)) || !\Drupal\Component\Utility\Unicode::strlen(trim($custom_var_value))) {
+        if (!Unicode::strlen(trim($custom_var_name)) || !Unicode::strlen(trim($custom_var_value))) {
           continue;
         }
 
         // The length of the string used for the 'name' and the one used for
         // the 'value' must not exceed 128 bytes after url encoding.
-        $name_length = \Drupal\Component\Utility\Unicode::strlen(rawurlencode($custom_var_name));
+        $name_length = Unicode::strlenn(rawurlencode($custom_var_name));
         $tmp_value = rawurlencode($custom_var_value);
-        $value_length = \Drupal\Component\Utility\Unicode::strlen($tmp_value);
+        $value_length = Unicode::strlen($tmp_value);
         if ($name_length + $value_length > 128) {
           // Trim value and remove fragments of url encoding.
           $tmp_value = rtrim(substr($tmp_value, 0, 127 - $name_length), '%0..9A..F');
           $custom_var_value = urldecode($tmp_value);
         }
 
-        $custom_var_name = \Drupal\Component\Serialization\Json::encode($custom_var_name);
-        $custom_var_value = \Drupal\Component\Serialization\Json::encode($custom_var_value);
+        $custom_var_name = Json::encode($custom_var_name);
+        $custom_var_value = Json::encode($custom_var_value);
         $custom_var .= "_hmt.push(['_setCustomVar', $i, $custom_var_name, $custom_var_value, $custom_var_scope]);";
       }
     }
-
     // Start putting together the javascript code to be inserted in the page.
     $script = 'var _hmt = _hmt || [];';
-    $script .= '_hmt.push(["_setAccount", ' . \Drupal\Component\Serialization\Json::encode($id) . ']);';
+    $script .= '_hmt.push(["_setAccount", ' . Json::encode($id) . ']);';
 
     if (!empty($custom_var)) {
       $script .= $custom_var;
@@ -268,21 +234,15 @@ $baidu_analytics_custom_vars = \Drupal::config('baidu_analytics.settings')->get(
     if (!empty($codesnippet_after)) {
       $script .= $codesnippet_after;
     }
-
     // Determine which type of code should be used: async or standard.
-    if (\Drupal::config('baidu_analytics.settings')->get('baidu_analytics_code_type') == 'standard') {
+    if ($config->get('baidu_analytics_code_type') == 'standard') {
       // Provide Standard BATC file URL on server if it is locally cached.
-      if (\Drupal::config('baidu_analytics.settings')->get('baidu_analytics_cache') && $library_tracker_url = _baidu_analytics_cache(BAIDU_ANALYTICS_STANDARD_LIBRARY_URL)) {
+      if ($config->get('baidu_analytics_cache') && $library_tracker_url = _baidu_analytics_cache(BAIDU_ANALYTICS_STANDARD_LIBRARY_URL)) {
         // A dummy query-string is added to filenames, to gain control over
         // browser-caching. The string changes on every update or full cache
         // flush, forcing browsers to load a new copy of the files, as the
         // URL changed.
-        // @FIXME
-// // @FIXME
-// // This looks like another module's variable. You'll need to rewrite this call
-// // to ensure that it uses the correct configuration object.
-// $library_tracker_url .= '?' . variable_get('css_js_query_string', '0');
-
+        $library_tracker_url .= '?' . \Drupal::state()->get('system.css_js_query_string');
       }
       else {
         // If no cache is found, provide Standard Code Tracker library URL.
@@ -292,14 +252,9 @@ $baidu_analytics_custom_vars = \Drupal::config('baidu_analytics.settings')->get(
     }
     else {
       // Provide Asynchronous BATC file URL on server if it is locally cached.
-      if (\Drupal::config('baidu_analytics.settings')->get('baidu_analytics_cache') && $library_tracker_url = _baidu_analytics_cache(BAIDU_ANALYTICS_ASYNC_LIBRARY_URL)) {
+      if ($config->get('baidu_analytics_cache') && $library_tracker_url = _baidu_analytics_cache(BAIDU_ANALYTICS_ASYNC_LIBRARY_URL)) {
         // Add dummy query-string to filenames, same trick as the case above.
-        // @FIXME
-// // @FIXME
-// // This looks like another module's variable. You'll need to rewrite this call
-// // to ensure that it uses the correct configuration object.
-// $library_tracker_url .= '?' . variable_get('css_js_query_string', '0');
-
+        $library_tracker_url .= '?' . \Drupal::state()->get('system.css_js_query_string');
       }
       else {
         // If no cache is found, provide Asynchronous Code Tracker library URL.
@@ -308,23 +263,22 @@ $baidu_analytics_custom_vars = \Drupal::config('baidu_analytics.settings')->get(
       // Asynchronous JavaScript tracking code.
       $script .= "(function() {var hm = document.createElement('script');hm.src = '{$library_tracker_url}';hm.type = 'text/javascript';var s = document.getElementsByTagName('script')[0];s.parentNode.insertBefore(hm, s);})()";
     }
-    // Add the assembled script code to the page in the right scope.
-    // @FIXME
-// The Assets API has totally changed. CSS, JavaScript, and libraries are now
-// attached directly to render arrays using the #attached property.
-//
-//
-// @see https://www.drupal.org/node/2169605
-// @see https://www.drupal.org/node/2408597
-// drupal_add_js($script, array('scope' => $scope, 'type' => 'inline'));
-
-//  }
+    $page['#attached']['html_head'][] = [
+      [
+        '#tag' => 'script',
+        '#value' => $script,
+        '#scope' => $scope,
+      ],
+      'baidu_analytics_tracking_script'
+    ];
+  }
 }
 
 /**
  * Implements hook_field_extra_fields().
  */
 function baidu_analytics_field_extra_fields() {
+  $extra = array();
   $extra['user']['user']['form']['baidu_analytics'] = array(
     'label' => t('Baidu Analytics configuration'),
     'description' => t('Baidu Analytics module form element.'),
@@ -340,10 +294,11 @@ function baidu_analytics_field_extra_fields() {
  * Allow users to decide if tracking code will be added to pages or not.
  */
 function baidu_analytics_form_user_profile_form_alter(&$form, &$form_state) {
+  $config = \Drupal::config('baidu_analytics.settings');
   $account = $form['#user'];
   $category = $form['#user_category'];
 
-  if ($category == 'account' && \Drupal::currentUser()->hasPermission('opt-in or out of tracking') && ($custom = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_custom')) != 0 && _baidu_analytics_visibility_roles($account)) {
+  if ($category == 'account' && \Drupal::currentUser()->hasPermission('opt-in or out of tracking') && ($custom = $config->get('baidu_analytics_custom')) != 0 && _baidu_analytics_visibility_roles($account)) {
     $form['baidu_analytics'] = array(
       '#type' => 'fieldset',
       '#title' => t('Baidu Analytics configuration'),
@@ -365,7 +320,7 @@ function baidu_analytics_form_user_profile_form_alter(&$form, &$form_state) {
     // Disable tracking for visitors who have opted out from tracking via DNT
     // (Do-Not-Track) header.
     $disabled = FALSE;
-    if (\Drupal::config('baidu_analytics.settings')->get('baidu_analytics_privacy_donottrack') && !empty($_SERVER['HTTP_DNT'])) {
+    if ($config->get('baidu_analytics_privacy_donottrack') && !empty($_SERVER['HTTP_DNT'])) {
       $disabled = TRUE;
 
       // Override settings value.
@@ -408,10 +363,11 @@ function baidu_analytics_user_presave(\Drupal\user\UserInterface $account, $cate
  * Implements hook_cron().
  */
 function baidu_analytics_cron() {
+  $config = \Drupal::config('baidu_analytics.settings');
   // Regenerate the tracking code file every day.
-  if (\Drupal::config('baidu_analytics.settings')->get('baidu_analytics_cache') && REQUEST_TIME - \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_last_cache') >= 86400) {
+  if ($config->get('baidu_analytics_cache') && REQUEST_TIME - $config->get('baidu_analytics_last_cache') >= 86400) {
     // Depending on the type of code selected, provide the correct tracker url.
-    if (\Drupal::config('baidu_analytics.settings')->get('baidu_analytics_code_type') == 'standard') {
+    if ($config->get('baidu_analytics_code_type') == 'standard') {
       $library_tracker_url = BAIDU_ANALYTICS_STANDARD_LIBRARY_URL;
     }
     else {
@@ -451,8 +407,9 @@ function baidu_analytics_search_get_keys() {
  *   The path to the local javascript file on success, boolean FALSE on failure.
  */
 function _baidu_analytics_cache($location, $sync_cached_file = FALSE) {
+  $config = \Drupal::config('baidu_analytics.settings');
   $path = 'public://baidu_analytics';
-  $baidu_analytics_account = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_account');
+  $baidu_analytics_account = $config->get('baidu_analytics_account');
   // Use a tracker specific cache file to allow multiple codes on same site.
   $tracker_hash = \Drupal\Component\Utility\Unicode::substr($baidu_analytics_account, 0, 7);
   $file_destination = $path . '/' . (!empty($tracker_hash) ? $tracker_hash . '-' : '') . basename($location);
@@ -462,23 +419,14 @@ function _baidu_analytics_cache($location, $sync_cached_file = FALSE) {
     // Get current server's protocol to match with the request.
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? 'https://' : 'http://';
     $location = $protocol . $location . '?' . $baidu_analytics_account;
-    // The Referer header of the HTTP request has to be set to the current site
-    // to be able to download the latest tracking code from Baidu Analytics.
-    // @FIXME
-// drupal_http_request() has been replaced by the Guzzle HTTP client, which is bundled
-// with Drupal core.
-//
-//
-// @see https://www.drupal.org/node/1862446
-// @see http://docs.guzzlephp.org/en/latest
-// $result = drupal_http_request($location, array('headers' => array('referer' => $base_url)));
-
-
-    if ($result->code == 200) {
+    try {
+      $data = \Drupal::httpClient()
+        ->get($location, $query)
+        ->getBody(TRUE);
       if (file_exists($file_destination)) {
         // Synchronize tracking code and and replace local file if outdated.
-        $data_hash_local = \Drupal\Component\Utility\Crypt::hashBase64(file_get_contents($file_destination));
-        $data_hash_remote = \Drupal\Component\Utility\Crypt::hashBase64($result->data);
+        $data_hash_local = Crypt::hashBase64(file_get_contents($file_destination));
+        $data_hash_remote = Crypt::hashBase64($result->data);
         // Check that the files directory is writable.
         if ($data_hash_local != $data_hash_remote && file_prepare_directory($path)) {
           // Save updated tracking code file to disk.
@@ -501,6 +449,9 @@ function _baidu_analytics_cache($location, $sync_cached_file = FALSE) {
           return file_create_url($file_destination);
         }
       }
+    }
+    catch (RequestException $exception) {
+      watchdog_exception('baidu_analytics', $exception);
     }
   }
   else {
@@ -603,11 +554,7 @@ function _baidu_analytics_visibility_pages() {
   if (!isset($page_match)) {
 
     $visibility = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_visibility_pages');
-    // @FIXME
-// Could not extract the default value because it is either indeterminate, or
-// not scalar. You'll need to provide a default value in
-// config/install/baidu_analytics.settings.yml and config/schema/baidu_analytics.schema.yml.
-$setting_pages = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_pages');
+    $setting_pages = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_pages');
 
     // Match path if necessary.
     if (!empty($setting_pages)) {
@@ -650,7 +597,8 @@ $setting_pages = \Drupal::config('baidu_analytics.settings')->get('baidu_analyti
  * should be added to the current page and otherwise FALSE.
  */
 function _baidu_analytics_visibility_header($account) {
-  if (($account->uid || \Drupal::config('system.performance')->get('cache.page.max_age') == 0) && \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_privacy_donottrack') && !empty($_SERVER['HTTP_DNT'])) {
+  $config = \Drupal::config('baidu_analytics.settings');
+  if (($account->uid || \Drupal::config('system.performance')->get('cache.page.max_age') == 0) && $config->get('baidu_analytics_privacy_donottrack') && !empty($_SERVER['HTTP_DNT'])) {
     // Disable tracking if caching is disabled or a visitors is logged in and
     // have opted out from tracking via DNT (Do-Not-Track) header.
     return FALSE;
