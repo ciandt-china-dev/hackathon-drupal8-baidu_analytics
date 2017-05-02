@@ -206,8 +206,8 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
       '#title_display' => 'invisible',
       '#type' => 'textfield',
       '#default_value' => \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_trackfiles_extensions'),
-      '#description' => t('A file extension list separated by the | character that will be tracked as download when clicked. Regular expressions are supported. For example: !extensions', [
-        '!extensions' => BAIDU_ANALYTICS_TRACKFILES_EXTENSIONS
+      '#description' => t('A file extension list separated by the | character that will be tracked as download when clicked. Regular expressions are supported. For example: :extensions', [
+        ':extensions' => BAIDU_ANALYTICS_TRACKFILES_EXTENSIONS
         ]),
       '#maxlength' => 255,
     ];
@@ -245,13 +245,16 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
 
     // Search and Advertising configuration.
     $site_search_dependencies = '<div class="admin-requirements">';
-    $site_search_dependencies .= t('Requires: !module-list', [
-      '!module-list' => (\Drupal::moduleHandler()->moduleExists('search') ? t('@module (<span class="admin-enabled">enabled</span>)', [
-        '@module' => 'Search'
-        ]) : t('@module (<span class="admin-disabled">disabled</span>)', [
-        '@module' => 'Search'
-        ]))
+    if (\Drupal::moduleHandler()->moduleExists('search')) {
+      $site_search_dependencies .= t('Requires: @module (<span class="admin-enabled">enabled</span>)', [
+        '@module' => 'Search',
       ]);
+    }
+    else {
+      $site_search_dependencies .= t('Requires: @module (<span class="admin-disabled">disabled</span>)', [
+        '@module' => 'Search',
+      ]);
+    }
     $site_search_dependencies .= '</div>';
 
     $form['search_and_advertising']['baidu_analytics_site_search'] = [
@@ -438,27 +441,12 @@ class BaiduAnalyticsAdminSettingsForm extends ConfigFormBase {
       '#description' => t("Code in this textarea will be added <strong>after</strong> _hmt.push(['_trackPageview']). This is useful if you'd like to track a site in two accounts."),
     ];
 
-    // Allow selection of the scope/region in which script should be inserted.
-    // @FIXME
-    // theme() has been renamed to _theme() and should NEVER be called directly.
-    // Calling _theme() directly can alter the expected output and potentially
-    // introduce security issues (see https://www.drupal.org/node/2195739). You
-    // should use renderable arrays instead.
-    //
-    //
-    // @see https://www.drupal.org/node/2195739
-    // $js_scope_description_list = theme('item_list', array(
-    //     'items' => array(
-    //       t('<strong>Standard</strong> code in the <strong>footer</strong> of the page right before @body.', array('@body' => "</body>")),
-    //       t('<strong>Asynchronous</strong> code, in the <strong>header</strong> of the page right before @head.', array('@head' => "</head>")),
-    //     ),
-    //   ));
-
     $form['advanced']['baidu_analytics_js_scope'] = [
       '#type' => 'select',
       '#title' => t('JavaScript scope'),
-      '#description' => t('<strong>Default</strong> should be selected to follow Baidu Analytics\' recommended settings:!item_list Feel free to override this setting by selecting a specific scope, such as <em>header</em> or <em>footer</em>, in the dropdown.<br/>For more information, please check <a href="@ba_settings">Baidu Analytics Recommendations</a> or the <a href="@screenshot">different recommended positions for each type of code</a>.', [
-        '!item_list' => $js_scope_description_list,
+      '#description' => t('<strong>Default</strong> should be selected to follow Baidu Analytics\' recommended settings: <div class="item-list"><ul><li><strong>Standard</strong> code in the <strong>footer</strong> of the page right before @body.</li><li><strong>Asynchronous</strong> code, in the <strong>header</strong> of the page right before @head.</li></ul></div> Feel free to override this setting by selecting a specific scope, such as <em>header</em> or <em>footer</em>, in the dropdown.<br/>For more information, please check <a href="@ba_settings">Baidu Analytics Recommendations</a> or the <a href="@screenshot">different recommended positions for each type of code</a>.', [
+        '@body' => "</body>",
+        "@head" => "</head>",
         '@ba_settings' => 'http://tongji.baidu.com/open/api/more?p=ref_setAccount',
         '@screenshot' => 'https://drupal.org/files/project-images/20130823DO_baidu_analytics_tracking_code_rev1.jpg',
       ]),
