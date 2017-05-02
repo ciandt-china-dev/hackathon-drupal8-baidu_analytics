@@ -277,7 +277,7 @@ function baidu_analytics_page_attachments(&$page) {
 /**
  * Implements hook_field_extra_fields().
  */
-function baidu_analytics_field_extra_fields() {
+function baidu_analytics_entity_extra_field_info() {
   $extra = array();
   $extra['user']['user']['form']['baidu_analytics'] = array(
     'label' => t('Baidu Analytics configuration'),
@@ -353,9 +353,9 @@ function baidu_analytics_form_user_profile_form_alter(&$form, &$form_state) {
  * remove every reference to them.
  */
 
-function baidu_analytics_user_presave(\Drupal\user\UserInterface $account, $category, $edit = NULL) {
-  if (isset($edit['baidu_analytics']['custom'])) {
-    $edit['data']['baidu_analytics']['custom'] = $edit['baidu_analytics']['custom'];
+function baidu_analytics_user_presave($account) {
+  if (isset($account->baidu_analytics['custom'])) {
+    $account->data['baidu_analytics']['custom'] =$account->baidu_analytics['custom'];
   }
 }
 
