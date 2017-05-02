@@ -8,6 +8,7 @@
  * the Baidu Analytics statistics package.
  */
 use Drupal\Component\Serialization\Json;
+use Drupal\Component\Utility\Crypt;
 /**
  * Define the default file extension list that should be tracked as download.
  */
