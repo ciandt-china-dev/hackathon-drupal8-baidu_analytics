@@ -1,0 +1,16 @@
+baidu_analytics:
+  version: VERSION
+  js:
+    baidu_analytics.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings
+
+baidu_analytics.admin:
+  version: VERSION
+  js:
+    baidu_analytics.admin.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal

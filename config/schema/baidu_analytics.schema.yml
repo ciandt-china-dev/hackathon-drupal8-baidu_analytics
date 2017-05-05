@@ -1,0 +1,40 @@
+baidu_analytics.settings:
+  type: mapping
+  label: Settings
+  mapping:
+    baidu_analytics_account:
+      type: string
+    baidu_analytics_visibility_pages:
+      type: integer
+    baidu_analytics_visibility_roles:
+      type: integer
+    baidu_analytics_custom:
+      type: integer
+    baidu_analytics_trackoutbound:
+      type: boolean
+    baidu_analytics_trackmailto:
+      type: boolean
+    baidu_analytics_trackfiles:
+      type: boolean
+    baidu_analytics_site_search:
+      type: boolean
+    baidu_analytics_privacy_donottrack:
+      type: boolean
+    baidu_analytics_code_type:
+      type: string
+    baidu_analytics_cache:
+      type: boolean
+    baidu_analytics_translation_set:
+      type: boolean
+    baidu_analytics_codesnippet_before:
+      type: string
+    baidu_analytics_codesnippet_after:
+      type: string
+    baidu_analytics_js_scope:
+      type: string
+    baidu_analytics_last_cache:
+      type: integer
+    baidu_analytics_pages:
+      type: string
+    baidu_analytics_trackfiles_extensions:
+      type: string
