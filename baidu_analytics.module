@@ -226,7 +226,8 @@ function baidu_analytics_page_attachments(&$page) {
         // browser-caching. The string changes on every update or full cache
         // flush, forcing browsers to load a new copy of the files, as the
         // URL changed.
-        $library_tracker_url .= '?' . \Drupal::state()->get('system.css_js_query_string');
+        $query_string = '?' . (\Drupal::state()->get('system.css_js_query_string') ?: '0');
+        $library_tracker_url .= $query_string;
       }
       else {
         // If no cache is found, provide Standard Code Tracker library URL.
@@ -238,7 +239,8 @@ function baidu_analytics_page_attachments(&$page) {
       // Provide Asynchronous BATC file URL on server if it is locally cached.
       if ($config->get('baidu_analytics_cache') && $library_tracker_url = _baidu_analytics_cache(BAIDU_ANALYTICS_ASYNC_LIBRARY_URL)) {
         // Add dummy query-string to filenames, same trick as the case above.
-        $library_tracker_url .= '?' . \Drupal::state()->get('system.css_js_query_string');
+        $query_string = '?' . (\Drupal::state()->get('system.css_js_query_string') ?: '0');
+        $library_tracker_url .= $query_string;
       }
       else {
         // If no cache is found, provide Asynchronous Code Tracker library URL.
