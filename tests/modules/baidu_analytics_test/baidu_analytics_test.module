@@ -6,11 +6,11 @@
  */
 
 /**
- * Implements hook_page_alter().
+ * Implements hook_page_attachments().
  *
  * Programmatically set Messages to test resulting generated tracking code.
  */
-function baidu_analytics_test_page_alter(&$page) {
+function baidu_analytics_test_page_attachments(&$page) {
   // Programmatically trigger all Messages: status, error and warning.
   drupal_set_message(t('Baidu Analytics Test status message.'), 'status');
   drupal_set_message(t('Baidu Analytics Test warning message.'), 'warning');
