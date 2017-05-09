@@ -503,13 +503,13 @@ function _baidu_analytics_visibility_roles($account) {
 
   $visibility = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_visibility_roles');
   $enabled = $visibility;
-  $roles = \Drupal::config('baidu_analytics.settings')->get('baidu_analytics_roles');
+  $roles = array_filter(\Drupal::config('baidu_analytics.settings')->get('baidu_analytics_roles'));
 
-  if (array_sum($roles) > 0) {
+  if (count($roles) > 0) {
     // One or more roles are selected.
-    foreach (array_keys($account->roles) as $rid) {
+    foreach (array_values($account->getRoles()) as $user_role) {
       // Is the current user a member of one of these roles?
-      if (isset($roles[$rid]) && $rid == $roles[$rid]) {
+      if (in_array($user_role, $roles)) {
         // Current user is a member of a role that should be tracked or
         // excluded from tracking.
         $enabled = !$visibility;
