@@ -9,6 +9,7 @@
  */
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Crypt;
+use Drupal\Core\Form\FormStateInterface;
 /**
  * Define the default file extension list that should be tracked as download.
  */
@@ -279,21 +280,21 @@ function baidu_analytics_entity_extra_field_info() {
  *
  * Allow users to decide if tracking code will be added to pages or not.
  */
-function baidu_analytics_form_user_profile_form_alter(&$form, &$form_state) {
+function baidu_analytics_form_user_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   $config = \Drupal::config('baidu_analytics.settings');
-  $account = $form['#user'];
-  $category = $form['#user_category'];
+  $account = $form_state->getFormObject()->getEntity();
+  //$category = $form['#user_category'];
 
-  if ($category == 'account' && \Drupal::currentUser()->hasPermission('opt-in or out of tracking') && ($custom = $config->get('baidu_analytics_custom')) != 0 && _baidu_analytics_visibility_roles($account)) {
+  if (\Drupal::currentUser()->hasPermission('opt-in or out of tracking') && ($visibility_user_account_mode = $config->get('baidu_analytics_custom')) != 0 && _baidu_analytics_visibility_roles($account)) {
+    $account_data_baidu_analytics = \Drupal::service('user.data')->get('baidu_analytics', $account->id());
     $form['baidu_analytics'] = array(
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#title' => t('Baidu Analytics configuration'),
       '#weight' => 3,
-      '#collapsible' => TRUE,
-      '#tree' => TRUE,
+      '#open' => TRUE,
     );
 
-    switch ($custom) {
+    switch ($visibility_user_account_mode) {
       case 1:
         $description = t('Users are tracked by default, but you are able to opt out.');
         break;
@@ -310,38 +311,32 @@ function baidu_analytics_form_user_profile_form_alter(&$form, &$form_state) {
       $disabled = TRUE;
 
       // Override settings value.
-      $account->data['baidu_analytics']['custom'] = FALSE;
+      $account_data_baidu_analytics['baidu_analytics_custom'] = FALSE;
 
       $description .= '<span class="admin-disabled">';
       $description .= ' ' . t('You have opted out from tracking via browser privacy settings.');
       $description .= '</span>';
     }
 
-    $form['baidu_analytics']['custom'] = array(
+    $form['baidu_analytics']['baidu_analytics_custom'] = array(
       '#type' => 'checkbox',
       '#title' => t('Enable user tracking'),
       '#description' => $description,
-      '#default_value' => isset($account->data['baidu_analytics']['custom']) ? $account->data['baidu_analytics']['custom'] : ($custom == 1),
+      '#default_value' => isset($account_data_baidu_analytics['baidu_analytics_custom']) ? $account_data_baidu_analytics['baidu_analytics_custom'] : ($visibility_user_account_mode == 1),
       '#disabled' => $disabled,
     );
-
-    return $form;
+    // hook_user_update() is missing in D8, add custom submit handler.
+    $form['actions']['submit']['#submit'][] = 'baidu_analytics_user_profile_form_submit';
   }
 }
 
 /**
- * Implements hook_user_presave().
- *
- * @FIXME
- * The $edit and $category parameters are gone in Drupal 8. They have been left
- * here in order to prevent 'undefined variable' errors, but they will never
- * actually be passed to this hook. You'll need to modify this function and
- * remove every reference to them.
+ * Submit callback for user profile form to save the Baidu Analytics setting.
  */
-
-function baidu_analytics_user_presave($account) {
-  if (isset($account->baidu_analytics['custom'])) {
-    $account->data['baidu_analytics']['custom'] =$account->baidu_analytics['custom'];
+function baidu_analytics_user_profile_form_submit($form, FormStateInterface $form_state) {
+  $account = $form_state->getFormObject()->getEntity();
+  if ($account->id() && $form_state->hasValue('baidu_analytics_custom')) {
+    \Drupal::service('user.data')->set('baidu_analytics', $account->id(), 'baidu_analytics_custom', (int) $form_state->getValue('baidu_analytics_custom'));
   }
 }
 
