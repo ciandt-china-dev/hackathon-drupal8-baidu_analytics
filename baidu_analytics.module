@@ -10,6 +10,7 @@
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 /**
  * Define the default file extension list that should be tracked as download.
  */
@@ -36,6 +37,15 @@ define('BAIDU_ANALYTICS_STANDARD_LIBRARY_URL', 'hm.baidu.com/h.js');
  */
 function baidu_analytics_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
   switch ($route_name) {
+    case 'help.page.baidu_analytics':
+      $output = '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Baidu Analytics adds a web statistics tracking system to your website. This system incorporates numerous statistical features. For an extensive listing of these features see the <a href=":project">Baidu Analytics</a> project site. Beyond that, additional information can be found at the <a href=":documentation">Drupal - Baidu Analytics documentation</a>.', [':documentation' => 'https://www.drupal.org/node/2076737', ':project' => 'https://www.drupal.org/project/baidu_analytics']) . '</p>';
+      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<dt>' . t('Configuring Baidu Analytics') . '</dt>';
+      $output .= '<dd>' . t('All settings for this module can be found on the <a href=":ba_settings">Baidu Analytics settings</a> page. When entering the Baidu Analytics account number here, it will automatically add the required JavaScript to every page generated. The <em>General Settings</em> section on this page provides additional instruction about setting up tracking thru the Baidu account.', [':ba_settings' => Url::fromRoute('baidu_analytics.admin_settings_form')->toString()]) . '</dd>';
+      $output .= '<dt>' . t('Additional features') . '</dt>';
+      $output .= '<dd>' . t('The Baidu Analytics module offers a bit more than basic tracking. <em>Page Tracking</em> for instance allows you to provide a list of pages to track, or a list of pages not to track. Role and Link tracking features are also available. For a comprehensive discussion on the setup and use of its many feature see the <a href=":documentation">Drupal - Baidu Analytics documentation</a>.', [':documentation' => 'https://www.drupal.org/node/2076737']) . '</dd>';
+      return $output;
     case 'baidu_analytics.admin_settings_form':
       return t('<a href="@btj_url">Baidu Analytics</a> is a free (registration required) website traffic and marketing effectiveness service.', array('@btj_url' => 'http://tongji.baidu.com/'));
   }
