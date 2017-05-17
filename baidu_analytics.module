@@ -593,7 +593,7 @@ function _baidu_analytics_visibility_pages() {
  */
 function _baidu_analytics_visibility_header($account) {
   $config = \Drupal::config('baidu_analytics.settings');
-  if (($account->uid || \Drupal::config('system.performance')->get('cache.page.max_age') == 0) && $config->get('baidu_analytics_privacy_donottrack') && !empty($_SERVER['HTTP_DNT'])) {
+  if (($account->id() || \Drupal::config('system.performance')->get('cache.page.max_age') == 0) && $config->get('baidu_analytics_privacy_donottrack') && !empty($_SERVER['HTTP_DNT'])) {
     // Disable tracking if caching is disabled or a visitors is logged in and
     // have opted out from tracking via DNT (Do-Not-Track) header.
     return FALSE;
