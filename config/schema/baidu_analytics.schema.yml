@@ -1,6 +1,6 @@
 baidu_analytics.settings:
-  type: mapping
-  label: Settings
+  type: config_object
+  label: 'Baidu Analytics settings'
   mapping:
     baidu_analytics_account:
       type: string
